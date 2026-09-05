@@ -63,7 +63,6 @@ export class RestaurantService {
             email: string;
             openingHours: string;
             logoUrl: string;
-            isBanned: boolean;
         }>
     ): Promise<Restaurant | null> {
         const restaurant = await restaurantRepository.findOneBy({ id });
@@ -72,6 +71,17 @@ export class RestaurantService {
         }
 
         Object.assign(restaurant, data, { updatedAt: new Date() });
+        return await restaurantRepository.save(restaurant);
+    }
+
+    static async setBanStatus(id: string, isBanned: boolean): Promise<Restaurant | null> {
+        const restaurant = await restaurantRepository.findOneBy({ id });
+        if (!restaurant) {
+            return null;
+        }
+
+        restaurant.isBanned = isBanned;
+        restaurant.updatedAt = new Date();
         return await restaurantRepository.save(restaurant);
     }
 

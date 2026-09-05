@@ -77,7 +77,7 @@ export class RestaurantController {
     static async updateRestaurant(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
         try {
             const { id } = req.params;
-            const { name, address, phone, description, email, openingHours, logoUrl, isBanned } = req.body;
+            const { name, address, phone, description, email, openingHours, logoUrl } = req.body;
 
             const restaurant = await RestaurantService.updateRestaurant(id, {
                 name,
@@ -87,7 +87,6 @@ export class RestaurantController {
                 email,
                 openingHours,
                 logoUrl,
-                isBanned,
             });
 
             if (!restaurant) {
@@ -101,6 +100,33 @@ export class RestaurantController {
             res.status(200).json({
                 success: true,
                 data: restaurant,
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async toggleBan(req: Request<{ id: string }>, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const { id } = req.params;
+            const { isBanned } = req.body;
+
+            const existing = await RestaurantService.getRestaurantById(id);
+            if (!existing) {
+                res.status(404).json({
+                    success: false,
+                    message: "Restaurant not found",
+                });
+                return;
+            }
+
+            const targetBanStatus = typeof isBanned === "boolean" ? isBanned : !existing.isBanned;
+            const updated = await RestaurantService.setBanStatus(id, targetBanStatus);
+
+            res.status(200).json({
+                success: true,
+                message: targetBanStatus ? "Restaurant banned successfully" : "Restaurant unbanned successfully",
+                data: updated,
             });
         } catch (error) {
             next(error);

@@ -298,16 +298,6 @@ export default function CustomerLoginPage() {
             )}
           </CardContent>
         </Card>
-
-        {/* Admin portal redirect footer note */}
-        <div className="mt-3.5 text-center">
-          <p className="text-xs text-muted-foreground">
-            Are you restaurant staff or admin?{' '}
-            <Link to="/admin/login" className="text-primary font-medium hover:underline inline-flex items-center gap-1">
-              Admin Portal &rarr;
-            </Link>
-          </p>
-        </div>
       </div>
     </div>
   )

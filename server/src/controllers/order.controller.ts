@@ -4,6 +4,7 @@ import { OrderService } from "../services/order.service";
 import { OrderItemService } from "../services/orderItem.service";
 import { MenuItemService } from "../services/menuItem.service";
 import { CustomerService } from "../services/customer.service";
+import { RestaurantService } from "../services/restaurant.service";
 import { OrderStatus } from "../entities/order.entity";
 
 const JWT_SECRET = process.env.JWT_SECRET || "default_jwt_secret_key";
@@ -67,7 +68,23 @@ export class OrderController {
                 return;
             }
 
-            // 1. Auto-link customer from authenticated cookie token if diner is logged in
+            const restaurant = await RestaurantService.getRestaurantById(restaurantId);
+            if (!restaurant) {
+                res.status(404).json({
+                    success: false,
+                    message: "Restaurant not found",
+                });
+                return;
+            }
+
+            if (restaurant.isBanned) {
+                res.status(403).json({
+                    success: false,
+                    message: "This restaurant is currently suspended and cannot accept orders.",
+                });
+                return;
+            }
+
             let isUserAuth = false;
             if (req.cookies?.token) {
                 try {
@@ -84,7 +101,6 @@ export class OrderController {
                 }
             }
 
-            // 2. If not authenticated, link to an anonymous Guest Customer record (isGuest: true)
             if (!isUserAuth) {
                 const guestCustomer = await CustomerService.getOrCreateGuestCustomer(customerId);
                 customerId = guestCustomer.id;

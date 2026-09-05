@@ -14,7 +14,11 @@ import {
   CreditCard,
   Pencil,
   Clock,
+  Ban,
+  CheckCircle2,
+  ShieldAlert,
 } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -1782,9 +1786,13 @@ function BillingTab({ restaurantId }: { restaurantId: string }) {
 
 export default function RestaurantDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const { isAdmin } = useAuth()
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+
+  const [banDialogOpen, setBanDialogOpen] = useState(false)
+  const [banLoading, setBanLoading] = useState(false)
 
   const [showEditRestaurant, setShowEditRestaurant] = useState(false)
   const [restaurantForm, setRestaurantForm] = useState({
@@ -1834,6 +1842,25 @@ export default function RestaurantDetailPage() {
       alert(err.response?.data?.message || 'Failed to update restaurant details.')
     } finally {
       setSavingRestaurant(false)
+    }
+  }
+
+  async function handleToggleBan() {
+    if (!restaurant) return
+    try {
+      setBanLoading(true)
+      const targetBan = !restaurant.isBanned
+      const res = await restaurantApi.toggleBan(restaurant.id, targetBan)
+      if (res.success && res.data) {
+        setRestaurant(res.data)
+      } else {
+        setRestaurant((prev) => prev ? { ...prev, isBanned: targetBan } : null)
+      }
+      setBanDialogOpen(false)
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Failed to update restaurant ban status.')
+    } finally {
+      setBanLoading(false)
     }
   }
 
@@ -1903,15 +1930,38 @@ export default function RestaurantDetailPage() {
           </div>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleStartEditRestaurant}
-          className="flex items-center gap-1.5"
-        >
-          <Pencil className="w-4 h-4" />
-          <span>Edit Details</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Button
+              variant={restaurant.isBanned ? 'outline' : 'destructive'}
+              size="sm"
+              onClick={() => setBanDialogOpen(true)}
+              className={restaurant.isBanned ? 'border-emerald-600 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950 flex items-center gap-1.5' : 'flex items-center gap-1.5'}
+            >
+              {restaurant.isBanned ? (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>Unban Restaurant</span>
+                </>
+              ) : (
+                <>
+                  <Ban className="w-4 h-4" />
+                  <span>Ban Restaurant</span>
+                </>
+              )}
+            </Button>
+          )}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleStartEditRestaurant}
+            className="flex items-center gap-1.5"
+          >
+            <Pencil className="w-4 h-4" />
+            <span>Edit Details</span>
+          </Button>
+        </div>
       </div>
 
       {/* Info cards */}
@@ -2086,6 +2136,49 @@ export default function RestaurantDetailPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Ban / Unban Confirmation Dialog */}
+      <Dialog open={banDialogOpen} onOpenChange={setBanDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <ShieldAlert className={`w-5 h-5 ${restaurant.isBanned ? 'text-emerald-600' : 'text-destructive'}`} />
+              <DialogTitle>
+                {restaurant.isBanned ? 'Unban Restaurant?' : 'Ban Restaurant?'}
+              </DialogTitle>
+            </div>
+            <DialogDescription className="pt-2">
+              {restaurant.isBanned ? (
+                <span>
+                  Unbanning <strong>{restaurant.name}</strong> will reinstate it on the customer browse page and allow customers to place orders again.
+                </span>
+              ) : (
+                <span>
+                  Banning <strong>{restaurant.name}</strong> will immediately hide it from customer browse pages and prevent new orders from being placed. Existing orders and staff access will remain intact.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setBanDialogOpen(false)}
+              disabled={banLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant={restaurant.isBanned ? 'default' : 'destructive'}
+              onClick={handleToggleBan}
+              disabled={banLoading}
+              className="flex items-center gap-1.5"
+            >
+              {banLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+              <span>{restaurant.isBanned ? 'Confirm Unban' : 'Confirm Ban'}</span>
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Hash,
   SlidersHorizontal,
+  Ban,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -139,7 +140,7 @@ export default function RestaurantMenuPage() {
   }, [id])
 
   function addToCart(item: MenuItem) {
-    if (!item.isAvailable) return
+    if (restaurant?.isBanned || !item.isAvailable) return
 
     setCart((prev) => {
       const existing = prev.find((c) => c.menuItem.id === item.id)
@@ -315,6 +316,19 @@ export default function RestaurantMenuPage() {
         </div>
       </div>
 
+      {/* Suspended Alert Banner */}
+      {restaurant.isBanned && (
+        <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-2xl p-4 flex items-center gap-3">
+          <Ban className="w-5 h-5 flex-shrink-0" />
+          <div>
+            <p className="font-semibold text-sm">Restaurant Temporarily Suspended</p>
+            <p className="text-xs text-destructive/80 mt-0.5">
+              This restaurant is currently banned by platform administration and is not accepting orders.
+            </p>
+          </div>
+        </div>
+      )}
+
       <Separator />
 
       {/* Category Pills & Availability Filter */}
@@ -392,7 +406,7 @@ export default function RestaurantMenuPage() {
       )}
 
       {/* Floating cart bar */}
-      {cartCount > 0 && (
+      {cartCount > 0 && !restaurant.isBanned && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-50 animate-fade-in">
           <Card className="shadow-2xl border-primary/20 bg-background/95 backdrop-blur-sm">
             <CardContent className="p-4 flex items-center justify-between gap-4">

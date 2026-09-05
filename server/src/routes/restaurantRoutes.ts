@@ -5,7 +5,7 @@ import { CategoryController } from "../controllers/category.controller";
 import { OrderController } from "../controllers/order.controller";
 import { BillController } from "../controllers/bill.controller";
 import { StaffMemberController } from "../controllers/staffMember.controller";
-import { verifyUser, verifyStaff, verifyOwner } from "../middlewares/auth.middleware";
+import { verifyUser, verifyStaff, verifyOwner, verifyAdmin } from "../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -14,6 +14,7 @@ router.get("/:id", RestaurantController.getRestaurantById);
 router.post("/", verifyUser, RestaurantController.createRestaurant);
 router.put("/:id", verifyOwner, RestaurantController.updateRestaurant);
 router.delete("/:id", verifyOwner, RestaurantController.deleteRestaurant);
+router.patch("/:id/ban", verifyAdmin, RestaurantController.toggleBan);
 
 router.get("/:id/menu-items", MenuItemController.getMenuItems);
 router.post("/:id/menu-items", verifyStaff, MenuItemController.createMenuItem);

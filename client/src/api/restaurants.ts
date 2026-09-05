@@ -16,4 +16,7 @@ export const restaurantApi = {
 
   delete: (id: string) =>
     apiClient.delete<ApiResponse<null>>(`/restaurants/${id}`).then((r) => r.data),
+
+  toggleBan: (id: string, isBanned?: boolean) =>
+    apiClient.patch<ApiResponse<Restaurant>>(`/restaurants/${id}/ban`, { isBanned }).then((r) => r.data),
 }
