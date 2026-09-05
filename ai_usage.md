@@ -6,11 +6,10 @@ This document provides a breakdown and record of artificial intelligence (AI) as
 
 ## AI Usage Summary
 
-| Component / Area | Estimated AI Usage (%) | Description | Prompts Used | Reference / Chat Link |
-| :--- | :---: | :--- | :--- | :--- |
-| **Pages (Frontend)** | 15% | *[Placeholder: Add description of frontend pages assisted by AI]* | *[Placeholder: Paste prompt(s) or refer below]* | [Chat Link Placeholder](https://example.com) |
-| **Hooks & State Logic** | 5% | *[Placeholder: Add description of hooks/utilities assisted by AI]* | *[Placeholder: Paste prompt(s) or refer below]* | [Chat Link Placeholder](https://example.com) |
-
+| Component / Area | Estimated AI Usage (%) |
+| :--- | :---: |
+| **Pages (Frontend)** | 15% |
+| **Hooks & State Logic** | 5% |
 ---
 
 ## Detailed Prompt Logs & References
