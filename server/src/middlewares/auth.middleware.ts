@@ -23,9 +23,18 @@ interface JwtPayload {
   id: string;
 }
 
+const extractToken = (req: Request): string | null => {
+  if (req.cookies?.token) return req.cookies.token;
+  const auth = req.headers.authorization;
+  if (auth && auth.startsWith("Bearer ")) {
+    return auth.slice(7);
+  }
+  return null;
+};
+
 export const verifyUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const token = req.cookies?.token;
+    const token = extractToken(req);
 
     if (!token) {
       const error: CustomError = new Error("Unauthorized request");
@@ -80,7 +89,7 @@ export const verifyAdmin = async (req: Request, res: Response, next: NextFunctio
 
 export const verifyStaff = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const token = req.cookies?.token;
+    const token = extractToken(req);
 
     if (!token) {
       const error: CustomError = new Error("Unauthorized request");
@@ -135,7 +144,7 @@ export const verifyStaff = async (req: Request, res: Response, next: NextFunctio
 
 export const verifyOwner = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const token = req.cookies?.token;
+    const token = extractToken(req);
 
     if (!token) {
       const error: CustomError = new Error("Unauthorized request");

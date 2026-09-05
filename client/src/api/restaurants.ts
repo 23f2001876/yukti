@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { ApiResponse, Restaurant } from '@/types'
+import type { ApiResponse, Restaurant, RestaurantAnalytics } from '@/types'
 
 export const restaurantApi = {
   getAll: () =>
@@ -19,4 +19,7 @@ export const restaurantApi = {
 
   toggleBan: (id: string, isBanned?: boolean) =>
     apiClient.patch<ApiResponse<Restaurant>>(`/restaurants/${id}/ban`, { isBanned }).then((r) => r.data),
+
+  getAnalytics: (id: string, range: string = '7d') =>
+    apiClient.get<ApiResponse<RestaurantAnalytics>>(`/restaurants/${id}/analytics?range=${range}`).then((r) => r.data),
 }

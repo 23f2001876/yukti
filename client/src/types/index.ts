@@ -233,3 +233,48 @@ export interface PaginatedResponse<T> {
   page: number
   limit: number
 }
+
+// ─── Analytics Types ─────────────────────────
+export interface AnalyticsSummary {
+  totalRevenue: number
+  totalOrders: number
+  completedOrders: number
+  averageOrderValue: number
+  activeTablesCount: number
+  totalCustomers: number
+}
+
+export interface RevenueTrendPoint {
+  date: string
+  label: string
+  revenue: number
+  orders: number
+}
+
+export interface TopSellingItem {
+  name: string
+  quantitySold: number
+  totalRevenue: number
+}
+
+export interface StatusBreakdown {
+  status: string
+  count: number
+  percentage: number
+}
+
+export interface PaymentBreakdown {
+  method: string
+  count: number
+  totalAmount: number
+  percentage: number
+}
+
+export interface RestaurantAnalytics {
+  timeRange: 'today' | '7d' | '30d' | 'all'
+  summary: AnalyticsSummary
+  revenueTrend: RevenueTrendPoint[]
+  topSellingItems: TopSellingItem[]
+  ordersByStatus: StatusBreakdown[]
+  paymentBreakdown: PaymentBreakdown[]
+}

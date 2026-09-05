@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link, useLocation } from 'react-router-dom'
+import { useParams, Link, useLocation, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeft,
   MapPin,
@@ -17,7 +17,9 @@ import {
   Ban,
   CheckCircle2,
   ShieldAlert,
+  TrendingUp,
 } from 'lucide-react'
+import { AnalyticsTab } from './AnalyticsTab'
 import { useAuth } from '@/context/AuthContext'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -1786,6 +1788,8 @@ function BillingTab({ restaurantId }: { restaurantId: string }) {
 
 export default function RestaurantDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const [searchParams] = useSearchParams()
+  const defaultTab = searchParams.get('tab') || 'menu'
   const { isAdmin } = useAuth()
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
@@ -2005,14 +2009,22 @@ export default function RestaurantDetailPage() {
       </div>
 
       {/* Management Tabs */}
-      <Tabs defaultValue="menu">
-        <TabsList className="grid grid-cols-5 w-full max-w-2xl">
+      <Tabs defaultValue={defaultTab}>
+        <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full max-w-3xl">
+          <TabsTrigger value="analytics" className="flex items-center gap-1.5">
+            <TrendingUp className="w-3.5 h-3.5 text-primary" />
+            <span>Analytics</span>
+          </TabsTrigger>
           <TabsTrigger value="menu">Menu Items</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
           <TabsTrigger value="orders">Orders & Tables</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
           <TabsTrigger value="staff">Staff</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="analytics" className="mt-4">
+          <AnalyticsTab restaurantId={restaurant.id} />
+        </TabsContent>
 
         <TabsContent value="menu" className="mt-4">
           <MenuTab

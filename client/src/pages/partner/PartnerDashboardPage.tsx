@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Store, Plus, UtensilsCrossed, ChevronRight, MapPin, Phone, Sparkles } from 'lucide-react'
+import { Store, Plus, UtensilsCrossed, ChevronRight, MapPin, Phone, Sparkles, TrendingUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -129,9 +129,22 @@ export default function PartnerDashboardPage() {
                   </div>
                 </CardContent>
 
-                <div className="px-6 py-3 bg-muted/30 border-t border-border flex items-center justify-between text-xs font-medium text-primary">
-                  <span>Open Operations Dashboard</span>
-                  <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                <div className="px-6 py-3 bg-muted/30 border-t border-border flex items-center justify-between text-xs font-medium">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/partner/restaurants/${restaurant.id}?tab=analytics`)
+                    }}
+                    className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors py-1 px-2 rounded-md hover:bg-background border border-transparent hover:border-border"
+                  >
+                    <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Analytics</span>
+                  </button>
+                  <div className="flex items-center gap-1 text-primary">
+                    <span>Manage Operations</span>
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
                 </div>
               </Card>
             )
