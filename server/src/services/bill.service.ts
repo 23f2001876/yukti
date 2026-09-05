@@ -38,6 +38,7 @@ export class BillService {
             },
             relations: {
                 orders: { orderItems: { menuItem: true } },
+                customer: { user: true },
             },
             order: { createdAt: "DESC" },
         });
@@ -52,6 +53,7 @@ export class BillService {
             },
             relations: {
                 orders: { orderItems: { menuItem: true } },
+                customer: { user: true },
             },
             order: { createdAt: "DESC" },
         });
@@ -68,10 +70,27 @@ export class BillService {
     }): Promise<Bill> {
         const { restaurantId, customerId, tableNumber, orderIds = [], taxRate = 0, paymentStatus = PaymentStatus.Pending, paymentMethod } = data;
 
+        let resolvedTableNumber = tableNumber || null;
+        let resolvedCustomerId = customerId || null;
+
+        if (orderIds.length > 0 && (!resolvedTableNumber || !resolvedCustomerId)) {
+            const firstOrder = await orderRepository.findOne({
+                where: { id: In(orderIds) },
+            });
+            if (firstOrder) {
+                if (!resolvedTableNumber && firstOrder.tableNumber) {
+                    resolvedTableNumber = firstOrder.tableNumber;
+                }
+                if (!resolvedCustomerId && firstOrder.customerId) {
+                    resolvedCustomerId = firstOrder.customerId;
+                }
+            }
+        }
+
         const bill = billRepository.create({
             restaurant: { id: restaurantId },
-            customer: customerId ? { id: customerId } : null,
-            tableNumber: tableNumber || null,
+            customer: resolvedCustomerId ? { id: resolvedCustomerId } : null,
+            tableNumber: resolvedTableNumber,
             paymentStatus,
             paymentMethod: paymentMethod || null,
             subtotal: 0,
@@ -83,7 +102,7 @@ export class BillService {
 
         if (orderIds.length > 0) {
             // Attach orders to this bill
-            await orderRepository.update({ id: In(orderIds) }, { bill: savedBill });
+            await orderRepository.update({ id: In(orderIds) }, { billId: savedBill.id });
             await this.recalculateBillTotal(savedBill.id, taxRate);
         }
 
@@ -96,7 +115,7 @@ export class BillService {
             throw new Error("Bill not found.");
         }
 
-        await orderRepository.update({ id: orderId }, { bill: { id: billId } });
+        await orderRepository.update({ id: orderId }, { billId });
         await this.recalculateBillTotal(billId, taxRate);
 
         return (await this.getBillById(billId))!;
@@ -108,7 +127,7 @@ export class BillService {
             throw new Error("Bill not found.");
         }
 
-        await orderRepository.update({ id: orderId, bill: { id: billId } }, { bill: null });
+        await orderRepository.update({ id: orderId, billId }, { billId: null });
         await this.recalculateBillTotal(billId, taxRate);
 
         return (await this.getBillById(billId))!;
@@ -131,7 +150,7 @@ export class BillService {
             for (const order of bill.orders) {
                 if (order.orderItems && order.orderItems.length > 0) {
                     for (const item of order.orderItems) {
-                        const price = Number(item.menuItem?.price || 0);
+                        const price = Number(item.priceAtOrder ?? item.menuItem?.price ?? 0);
                         const qty = Number(item.quantity || 1);
                         subtotal += price * qty;
                     }
@@ -181,7 +200,7 @@ export class BillService {
         }
 
         // Dissociate orders first
-        await orderRepository.update({ bill: { id } }, { bill: null });
+        await orderRepository.update({ billId: id }, { billId: null });
         await billRepository.remove(bill);
         return true;
     }

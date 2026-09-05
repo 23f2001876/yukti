@@ -1,6 +1,8 @@
 import { AppDataSource } from "../data-source";
 import { Orders, OrderStatus } from "../entities/order.entity";
 import { BillService } from "./bill.service";
+import { MenuItemService } from "./menuItem.service";
+import { OrderItemService } from "./orderItem.service";
 
 const orderRepository = AppDataSource.getRepository(Orders);
 
@@ -9,7 +11,7 @@ export class OrderService {
         return await orderRepository.find({
             where: { restaurant: { id: restaurantId } },
             relations: {
-                customer: true,
+                customer: { user: true },
                 bill: true,
                 orderItems: { menuItem: true },
             },
@@ -21,7 +23,7 @@ export class OrderService {
         return await orderRepository.findOne({
             where: { id },
             relations: {
-                customer: true,
+                customer: { user: true },
                 restaurant: true,
                 bill: true,
                 orderItems: { menuItem: true },
@@ -30,19 +32,32 @@ export class OrderService {
     }
 
     static async createOrder(data: {
-        customerId: string;
+        customerId?: string | null;
         restaurantId: string;
-        billId?: string;
-        tableNumber?: string;
+        billId?: string | null;
+        tableNumber?: string | null;
         status?: OrderStatus;
+        items?: { menuItemId: string; quantity: number }[];
     }): Promise<Orders> {
-        const { customerId, restaurantId, billId, tableNumber, ...rest } = data;
+        const { customerId, restaurantId, billId, tableNumber, items, ...rest } = data;
 
-        // If no explicit billId is provided, check if there is an active pending bill for this table or customer
         let activeBillId = billId;
         if (!activeBillId && tableNumber) {
             const tableBill = await BillService.getOpenBillForTable(restaurantId, tableNumber);
-            if (tableBill) activeBillId = tableBill.id;
+            if (tableBill) {
+                activeBillId = tableBill.id;
+            } else {
+                try {
+                    const newBill = await BillService.createBill({
+                        restaurantId,
+                        tableNumber,
+                        customerId: customerId || undefined,
+                    });
+                    if (newBill) activeBillId = newBill.id;
+                } catch {
+                    // Fall back to unbilled order if bill creation encounters an edge case
+                }
+            }
         }
         if (!activeBillId && customerId) {
             const custBill = await BillService.getOpenBillForCustomer(restaurantId, customerId);
@@ -51,15 +66,33 @@ export class OrderService {
 
         const order = orderRepository.create({
             ...rest,
-            customer: { id: customerId },
+            customerId: customerId || null,
+            customer: customerId ? { id: customerId } : null,
             restaurant: { id: restaurantId },
             tableNumber: tableNumber || null,
+            billId: activeBillId || null,
             bill: activeBillId ? { id: activeBillId } : null,
         });
 
         const savedOrder = await orderRepository.save(order);
 
-        // If attached to a bill, recalculate bill total
+        if (items && Array.isArray(items) && items.length > 0) {
+            for (const item of items) {
+                if (item.menuItemId) {
+                    const menuItem = await MenuItemService.getMenuItemById(item.menuItemId);
+                    if (menuItem) {
+                        await OrderItemService.addOrderItem({
+                            orderId: savedOrder.id,
+                            menuItemId: item.menuItemId,
+                            quantity: item.quantity || 1,
+                            itemNameAtOrder: menuItem.name,
+                            priceAtOrder: menuItem.price,
+                        });
+                    }
+                }
+            }
+        }
+
         if (activeBillId) {
             await BillService.recalculateBillTotal(activeBillId);
         }

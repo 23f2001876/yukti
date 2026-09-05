@@ -19,11 +19,18 @@ export class Orders {
     @PrimaryGeneratedColumn("uuid")
     id!: string;
 
-    @ManyToOne(() => Customer, (customer) => customer.orders)
-    customer!: Customer;
+    @Column({ type: "uuid", nullable: true })
+    customerId?: string | null;
+
+    @ManyToOne(() => Customer, (customer) => customer.orders, { nullable: true, onDelete: "SET NULL" })
+    @JoinColumn({ name: "customerId" })
+    customer?: Customer | null;
 
     @ManyToOne(() => Restaurant, (restaurant) => restaurant.orders)
     restaurant!: Restaurant;
+
+    @Column({ type: "uuid", nullable: true })
+    billId?: string | null;
 
     @ManyToOne(() => Bill, (bill) => bill.orders, { nullable: true, onDelete: "SET NULL" })
     @JoinColumn({ name: "billId" })

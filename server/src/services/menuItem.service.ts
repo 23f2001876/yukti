@@ -29,10 +29,11 @@ export class MenuItemService {
         isAvailable?: boolean;
         sortOrder?: number;
     }): Promise<MenuItems> {
-        const { restaurantId, categoryId, ...rest } = data;
+        const { restaurantId, categoryId, isAvailable = true, ...rest } = data;
 
         const menuItem = menuItemRepository.create({
             ...rest,
+            isAvailable,
             restaurant: { id: restaurantId },
             category: { id: categoryId },
         });

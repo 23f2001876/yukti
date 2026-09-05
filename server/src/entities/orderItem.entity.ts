@@ -7,7 +7,7 @@ export class OrderItem {
     @PrimaryGeneratedColumn("uuid")
     id!: string;
 
-    @ManyToOne(() => Orders, (order) => order.orderItems)
+    @ManyToOne(() => Orders, (order) => order.orderItems, { onDelete: "CASCADE" })
     order!: Orders;
 
     @ManyToOne(() => MenuItems, { onDelete: "RESTRICT" })

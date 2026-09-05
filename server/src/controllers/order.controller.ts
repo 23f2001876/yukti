@@ -1,8 +1,12 @@
 import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
 import { OrderService } from "../services/order.service";
 import { OrderItemService } from "../services/orderItem.service";
 import { MenuItemService } from "../services/menuItem.service";
+import { CustomerService } from "../services/customer.service";
 import { OrderStatus } from "../entities/order.entity";
+
+const JWT_SECRET = process.env.JWT_SECRET || "default_jwt_secret_key";
 
 export class OrderController {
     static async getOrders(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -53,7 +57,7 @@ export class OrderController {
     static async createOrder(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const restaurantId = (req.params.id || req.params.restaurantId || req.body.restaurantId) as string;
-            const { customerId, tableNumber, status, items } = req.body;
+            let { customerId, tableNumber, status, items } = req.body;
 
             if (!restaurantId) {
                 res.status(400).json({
@@ -63,35 +67,40 @@ export class OrderController {
                 return;
             }
 
+            // 1. Auto-link customer from authenticated cookie token if diner is logged in
+            let isUserAuth = false;
+            if (req.cookies?.token) {
+                try {
+                    const decoded = jwt.verify(req.cookies.token, JWT_SECRET) as { id: string };
+                    if (decoded?.id) {
+                        const customer = await CustomerService.getOrCreateCustomerForUser(decoded.id);
+                        if (customer) {
+                            customerId = customer.id;
+                            isUserAuth = true;
+                        }
+                    }
+                } catch {
+                    // Invalid/expired token - continue as anonymous guest
+                }
+            }
+
+            // 2. If not authenticated, link to an anonymous Guest Customer record (isGuest: true)
+            if (!isUserAuth) {
+                const guestCustomer = await CustomerService.getOrCreateGuestCustomer(customerId);
+                customerId = guestCustomer.id;
+            }
+
             const order = await OrderService.createOrder({
                 customerId,
                 restaurantId,
                 tableNumber,
                 status,
+                items,
             });
-
-            if (items && Array.isArray(items) && items.length > 0) {
-                for (const item of items) {
-                    if (item.menuItemId) {
-                        const menuItem = await MenuItemService.getMenuItemById(item.menuItemId);
-                        if (menuItem) {
-                            await OrderItemService.addOrderItem({
-                                orderId: order.id,
-                                menuItemId: item.menuItemId,
-                                quantity: item.quantity || 1,
-                                itemNameAtOrder: menuItem.name,
-                                priceAtOrder: menuItem.price,
-                            });
-                        }
-                    }
-                }
-            }
-
-            const fullOrder = await OrderService.getOrderById(order.id);
 
             res.status(201).json({
                 success: true,
-                data: fullOrder,
+                data: order,
             });
         } catch (error) {
             next(error);

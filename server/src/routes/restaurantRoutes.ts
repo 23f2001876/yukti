@@ -25,7 +25,7 @@ router.post("/:id/categories", verifyStaff, CategoryController.createCategory);
 router.put("/:id/categories/:categoryId", verifyStaff, CategoryController.updateCategory);
 router.delete("/:id/categories/:categoryId", verifyOwner, CategoryController.deleteCategory);
 
-router.get("/:id/orders", OrderController.getOrders);
+router.get("/:id/orders", verifyStaff, OrderController.getOrders);
 router.get("/:id/orders/:orderId", OrderController.getOrderById);
 router.post("/:id/orders", OrderController.createOrder);
 router.patch("/:id/orders/:orderId/status", verifyStaff, OrderController.updateOrderStatus);
