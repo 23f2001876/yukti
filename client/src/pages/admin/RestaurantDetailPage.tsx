@@ -1132,9 +1132,10 @@ function StaffTab({ restaurantId }: { restaurantId: string }) {
   const [staff, setStaff] = useState<StaffMember[]>([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
-  const [userId, setUserId] = useState('')
+  const [email, setEmail] = useState('')
   const [role, setRole] = useState<StaffRole>('Waiter')
   const [saving, setSaving] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   function loadStaff() {
     setLoading(true)
@@ -1154,18 +1155,19 @@ function StaffTab({ restaurantId }: { restaurantId: string }) {
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
+    setErrorMessage('')
     try {
       const res = await staffApi.add(restaurantId, {
-        userId: userId.trim(),
+        email: email.trim().toLowerCase(),
         staffRole: role,
       })
       if (res.success) {
         loadStaff()
         setShowAdd(false)
-        setUserId('')
+        setEmail('')
       }
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to add staff member.')
+      setErrorMessage(err.response?.data?.message || 'Failed to add staff member.')
     } finally {
       setSaving(false)
     }
@@ -1267,41 +1269,66 @@ function StaffTab({ restaurantId }: { restaurantId: string }) {
       )}
 
       {/* Add Staff Dialog */}
-      <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent>
+      <Dialog
+        open={showAdd}
+        onOpenChange={(open) => {
+          setShowAdd(open)
+          if (!open) setErrorMessage('')
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Add Staff Member</DialogTitle>
-            <DialogDescription>Assign a registered user to this restaurant.</DialogDescription>
+            <DialogDescription>
+              Assign a registered user to this restaurant using their account email.
+            </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleAdd} className="space-y-3">
+
+          {errorMessage && (
+            <div className="p-3 text-xs rounded-lg bg-destructive/10 border border-destructive/20 text-destructive">
+              {errorMessage}
+            </div>
+          )}
+
+          <form onSubmit={handleAdd} className="space-y-4">
             <div className="space-y-1.5">
-              <Label>User ID (UUID) *</Label>
+              <Label htmlFor="staff-email">User Email Address *</Label>
               <Input
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
+                id="staff-email"
+                type="email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value)
+                  if (errorMessage) setErrorMessage('')
+                }}
                 required
-                placeholder="User's unique ID"
+                placeholder="e.g. waiter@gmail.com"
               />
+              <p className="text-xs text-muted-foreground">
+                The user must already have a Yukti account with this email address.
+              </p>
             </div>
             <div className="space-y-1.5">
-              <Label>Role *</Label>
+              <Label htmlFor="staff-role">Role *</Label>
               <select
+                id="staff-role"
                 value={role}
                 onChange={(e) => setRole(e.target.value as StaffRole)}
                 className="w-full h-10 px-3 rounded-md border border-input bg-background text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               >
-                <option value="Waiter">Waiter</option>
-                <option value="Chef">Chef</option>
-                <option value="Manager">Manager</option>
-                <option value="Owner">Owner</option>
+                <option value="Waiter">Waiter (Takes orders, serves tables)</option>
+                <option value="Chef">Chef (Prepares kitchen orders)</option>
+                <option value="Manager">Manager (Manages operations & billing)</option>
+                <option value="Owner">Owner (Full administrative control)</option>
               </select>
             </div>
-            <DialogFooter>
+            <DialogFooter className="gap-2 sm:gap-0 pt-2">
               <Button type="button" variant="outline" onClick={() => setShowAdd(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={saving}>
-                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Add Staff
+              <Button type="submit" disabled={saving || !email.trim()}>
+                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Assign Staff
               </Button>
             </DialogFooter>
           </form>

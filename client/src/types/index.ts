@@ -196,7 +196,8 @@ export interface CreateOrderPayload {
 }
 
 export interface CreateStaffData {
-  userId: string
+  email?: string
+  userId?: string
   staffRole: StaffRole
 }
 

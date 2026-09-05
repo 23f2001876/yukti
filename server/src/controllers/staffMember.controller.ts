@@ -42,12 +42,12 @@ export class StaffMemberController {
     static async addStaffMember(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const restaurantId = (req.params.id || req.params.restaurantId || req.body.restaurantId) as string;
-            const { userId, staffRole } = req.body;
+            const { userId, email, staffRole } = req.body;
 
-            if (!restaurantId || !userId || !staffRole) {
+            if (!restaurantId || (!userId && !email) || !staffRole) {
                 res.status(400).json({
                     success: false,
-                    message: "restaurantId, userId, and staffRole are required",
+                    message: "restaurantId, staff member email (or userId), and staffRole are required",
                 });
                 return;
             }
@@ -60,13 +60,31 @@ export class StaffMemberController {
                 return;
             }
 
-            const staffMember = await StaffMemberService.addStaffMember({ restaurantId, userId, staffRole });
+            const staffMember = await StaffMemberService.addStaffMember({
+                restaurantId,
+                userId,
+                email,
+                staffRole,
+            });
 
             res.status(201).json({
                 success: true,
+                message: "Staff member assigned successfully",
                 data: staffMember,
             });
-        } catch (error) {
+        } catch (error: any) {
+            const msg = (error.message || "").toLowerCase();
+            if (
+                msg.includes("found") ||
+                msg.includes("already assigned") ||
+                msg.includes("required")
+            ) {
+                res.status(400).json({
+                    success: false,
+                    message: error.message,
+                });
+                return;
+            }
             next(error);
         }
     }
