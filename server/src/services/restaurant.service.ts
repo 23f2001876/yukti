@@ -1,7 +1,10 @@
 import { AppDataSource } from "../data-source";
 import { Restaurant } from "../entities/restaurant.entity";
+import { StaffMember, StaffRole } from "../entities/staffMember.entity";
+import { User } from "../entities/user.entity";
 
 const restaurantRepository = AppDataSource.getRepository(Restaurant);
+const staffRepository = AppDataSource.getRepository(StaffMember);
 
 export class RestaurantService {
     static async getAllRestaurants(): Promise<Restaurant[]> {
@@ -9,25 +12,45 @@ export class RestaurantService {
     }
 
     static async getRestaurantById(id: string): Promise<Restaurant | null> {
-        return await restaurantRepository.findOneBy({ id });
+        return await restaurantRepository.findOne({
+            where: { id },
+            relations: { menuItems: true },
+        });
     }
 
-    static async createRestaurant(data: {
-        name: string;
-        address: string;
-        phone: string;
-        description?: string;
-        email?: string;
-        openingHours?: string;
-        logoUrl?: string;
-    }): Promise<Restaurant> {
+    static async createRestaurant(
+        data: {
+            name: string;
+            address: string;
+            phone: string;
+            description?: string;
+            email?: string;
+            openingHours?: string;
+            logoUrl?: string;
+        },
+        creator?: User
+    ): Promise<Restaurant> {
         const existingRestaurant = await restaurantRepository.findOneBy({ name: data.name });
         if (existingRestaurant) {
             throw new Error("A restaurant with this name already exists.");
         }
 
-        const restaurant = restaurantRepository.create(data);
-        return await restaurantRepository.save(restaurant);
+        let restaurant = restaurantRepository.create(data);
+        restaurant = await restaurantRepository.save(restaurant);
+
+        if (creator) {
+            const ownerStaff = staffRepository.create({
+                user: creator,
+                restaurant,
+                staffRole: StaffRole.Owner,
+                isActive: true,
+            });
+            const savedOwnerStaff = await staffRepository.save(ownerStaff);
+            restaurant.owner = savedOwnerStaff;
+            await restaurantRepository.save(restaurant);
+        }
+
+        return restaurant;
     }
 
     static async updateRestaurant(

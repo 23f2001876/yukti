@@ -12,6 +12,13 @@ export class MenuItemService {
         });
     }
 
+    static async getMenuItemById(id: string): Promise<MenuItems | null> {
+        return await menuItemRepository.findOne({
+            where: { id },
+            relations: { category: true },
+        });
+    }
+
     static async createMenuItem(data: {
         restaurantId: string;
         categoryId: string;
